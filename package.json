@@ -1,0 +1,26 @@
+{
+    "name":  "yukikaze-live-ai",
+    "version":  "0.1.0",
+    "private":  false,
+    "type":  "module",
+    "scripts":  {
+                    "test":  "node --test tests/dialogue_bridge.test.mjs",
+                    "dialogue-bridge":  "node src/server.mjs"
+                },
+    "dependencies":  {
+                         "@modelcontextprotocol/sdk":  "^1.29.0",
+                         "playwright":  "^1.60.0",
+                         "wavesurfer.js":  "^7.11.1"
+                     },
+    "description":  "Bilibili live-stream AI dialogue bridge with TTS, memory, overlays, and local integrations.",
+    "license":  "MIT",
+    "keywords":  [
+                     "bilibili",
+                     "live-streaming",
+                     "ai",
+                     "tts",
+                     "gpt-sovits",
+                     "mcp",
+                     "vtuber"
+                 ]
+}

@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>台词桥接工具</title>
+    <link rel="stylesheet" href="/public/control.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card hero">
+        <div>
+          <h1>台词桥接工具</h1>
+          <p>
+            台词可选择生成语音；白框与生成语音使用同一条台词。人工台词和雪风回复的真实弹幕可分别控制。
+          </p>
+        </div>
+        <div class="status" id="status">初始化中</div>
+      </section>
+
+      <section class="card send-card">
+        <label for="lineInput">台词输入</label>
+        <textarea
+          id="lineInput"
+          rows="4"
+          placeholder="输入后按 Enter 发送，Shift+Enter 换行"
+        ></textarea>
+        <label class="checkbox-label">
+          <input id="manualEnableTts" type="checkbox" checked />
+          使用人工台词 TTS 预设生成语音
+        </label>
+        <div class="actions">
+          <button id="sendButton">一键发送</button>
+          <button id="previewButton" class="secondary">预览白框</button>
+          <button id="clearButton" class="secondary">清空白框</button>
+          <button id="openBrowserButton" class="secondary">
+            打开专用 B 站网页
+          </button>
+        </div>
+      </section>
+
+      <section class="grid ai-grid">
+        <form class="card settings" id="aiSettingsForm">
+          <div class="section-heading">
+            <div>
+              <h2>AI 自动回复</h2>
+              <p>监听直播间弹幕，由导演模型判断是否接话，再进入台词队列逐条播放。</p>
+            </div>
+          </div>
+          <label class="checkbox-label">
+            <input name="ai.enabled" type="checkbox" />
+            启用 AI 自动回复
+          </label>
+          <label class="checkbox-label">
+            <input name="ai.directorEnabled" type="checkbox" />
+            启用导演判断
+          </label>
+          <label>
+            API 类型
+            <select name="ai.provider">
+              <option value="openai-compatible">OpenAI 兼容</option>
+              <option value="anthropic">Claude / Anthropic</option>
+            </select>
+          </label>
+          <label>
+            API 地址
+            <input name="ai.baseUrl" placeholder="https://api.deepseek.com 或 https://api.anthropic.com" />
+          </label>
+          <label>
+            模型
+            <input name="ai.model" placeholder="deepseek-v4-pro 或 claude-sonnet-4-5" />
+          </label>
+          <details>
+            <summary>联网搜索 MCP</summary>
+            <label class="checkbox-label">
+              <input name="ai.tools.enabled" type="checkbox" />
+              启用工具系统
+            </label>
+            <label class="checkbox-label">
+              <input name="ai.tools.autoUseTools" type="checkbox" />
+              让雪风自动判断是否搜索
+            </label>
+            <label class="checkbox-label">
+              <input name="ai.tools.webSearch.enabled" type="checkbox" />
+              启用网页搜索
+            </label>
+            <label>
+              MCP Endpoint
+              <input name="ai.tools.webSearch.endpoint" placeholder="https://..." />
+            </label>
+            <div class="two">
+              <label>
+                每次回复最多搜索次数
+                <input name="ai.tools.maxSearchesPerReply" type="number" min="0" />
+              </label>
+              <label>
+                单次搜索结果数
+                <input name="ai.tools.webSearch.maxResults" type="number" min="1" />
+              </label>
+            </div>
+            <label>
+              每日搜索上限
+              <input name="ai.tools.dailySearchLimit" type="number" min="0" />
+            </label>
+          </details>
+          <label>
+            思考强度
+            <select name="ai.thinkingLevel">
+              <option value="high">high</option>
+              <option value="max">max</option>
+            </select>
+          </label>
+          <label class="checkbox-label">
+            <input name="ai.directorThinkingEnabled" type="checkbox" />
+            导演判断允许思考
+          </label>
+          <label class="checkbox-label">
+            <input name="ai.replyThinkingEnabled" type="checkbox" />
+            回复生成允许思考
+          </label>
+          <label>
+            角色设定
+            <textarea
+              id="aiPersona"
+              name="ai.persona"
+              rows="4"
+              placeholder="写给 AI 的人设、语气和禁忌"
+            ></textarea>
+          </label>
+          <div class="actions">
+            <button type="submit">保存 AI 设置</button>
+          </div>
+        </form>
+
+        <section class="card settings" id="aiStatusPanel">
+          <div class="section-heading">
+            <div>
+              <h2>AI 状态</h2>
+              <p id="aiStatusText">正在读取 AI 状态</p>
+            </div>
+            <strong id="aiKeyStatus">未配置密钥</strong>
+          </div>
+          <form class="inline-form" id="aiKeyForm">
+            <label>
+              API Key
+              <input
+                id="aiApiKey"
+                name="apiKey"
+                type="password"
+                autocomplete="off"
+                placeholder="粘贴后保存，页面不会回显"
+              />
+            </label>
+            <button type="submit">保存密钥</button>
+          </form>
+          <div class="actions">
+            <form class="inline-form search-key-form" id="aiSearchKeyForm">
+              <label>
+                腾讯云 SecretId
+                <input
+                  id="tencentSecretId"
+                  name="secretId"
+                  type="password"
+                  autocomplete="off"
+                  placeholder="只保存在本机"
+                />
+              </label>
+              <label>
+                腾讯云 SecretKey
+                <input
+                  id="tencentSecretKey"
+                  name="secretKey"
+                  type="password"
+                  autocomplete="off"
+                  placeholder="只保存在本机"
+                />
+              </label>
+              <button type="submit">保存搜索密钥</button>
+            </form>
+            <p id="aiSearchKeyStatus">搜索密钥未配置</p>
+            <button type="button" class="secondary" id="pauseAiButton">
+              暂停
+            </button>
+            <button type="button" class="secondary" id="resumeAiButton">
+              恢复
+            </button>
+            <button type="button" class="secondary" id="stopAiButton">
+              停止
+            </button>
+            <button type="button" class="secondary" id="clearAiQueueButton">
+              清空队列
+            </button>
+          </div>
+          <pre id="aiDebugInfo"></pre>
+        </section>
+
+        <section class="card settings" id="aiTtsStatusPanel">
+          <div class="section-heading">
+            <div>
+              <h2>AI TTS 生成</h2>
+              <p id="aiTtsSummary">等待雪风生成语音</p>
+            </div>
+          </div>
+          <div class="ai-tts-current">
+            <span>当前句</span>
+            <strong id="aiTtsCurrentText">无正在生成的句子</strong>
+            <small id="aiTtsCurrentMeta">输出路径会在完成后显示</small>
+          </div>
+          <div class="ai-tts-recent">
+            <h3>最近输出</h3>
+            <div id="aiTtsRecentList" class="ai-tts-recent-list"></div>
+          </div>
+        </section>
+
+        <section class="card settings ai-context-panel" id="aiContextPanel">
+          <div class="section-heading">
+            <div>
+              <h2>雪风可见上下文</h2>
+              <p id="aiTestStatusText">显示雪风当前会参考的 chat，上方是上下文，下方可以不开播测试聊天。</p>
+            </div>
+          </div>
+          <div class="ai-chat-shell">
+            <div class="ai-context-clock" id="aiContextClock">正在读取雪风当前时间</div>
+            <div class="ai-context-messages" id="aiContextMessages"></div>
+            <div class="ai-chat-composer">
+              <input id="aiTestUserName" value="测试观众" autocomplete="off" />
+              <textarea
+                id="aiTestMessage"
+                rows="2"
+                placeholder="不开播也可以发给雪风"
+              ></textarea>
+              <button type="button" id="sendAiTestMessageButton">
+                发送
+              </button>
+            </div>
+          </div>
+          <form class="ai-context-settings" id="aiContextSettingsForm">
+            <div class="two">
+              <label>
+                给雪风看的最近消息数
+                <input name="ai.contextLimit" type="number" min="1" />
+              </label>
+              <label>
+                本地最多保留消息数
+                <input name="ai.localHistoryLimit" type="number" min="1" />
+              </label>
+              <label>
+                自动总结间隔事件数
+                <input name="ai.memorySummaryInterval" type="number" min="1" />
+              </label>
+              <label>
+                每句语音结束后间隔秒数
+                <input name="ai.replyAudioGapSeconds" type="number" min="-0.5" step="0.1" />
+              </label>
+            </div>
+            <div class="context-kind-grid">
+              <label class="checkbox-label"><input name="ai.contextEventKinds.danmaku" type="checkbox" />弹幕/离线测试</label>
+              <label class="checkbox-label"><input name="ai.contextEventKinds.room_enter" type="checkbox" />进房</label>
+              <label class="checkbox-label"><input name="ai.contextEventKinds.follow" type="checkbox" />关注</label>
+              <label class="checkbox-label"><input name="ai.contextEventKinds.gift" type="checkbox" />礼物</label>
+              <label class="checkbox-label"><input name="ai.contextEventKinds.guard" type="checkbox" />舰长</label>
+              <label class="checkbox-label"><input name="ai.contextEventKinds.super_chat" type="checkbox" />醒目留言</label>
+              <label class="checkbox-label"><input name="ai.contextEventKinds.like" type="checkbox" />点赞</label>
+              <label class="checkbox-label"><input name="ai.contextEventKinds.online_snapshot" type="checkbox" />在线榜</label>
+              <label class="checkbox-label"><input name="ai.contextEventKinds.share" type="checkbox" />分享</label>
+              <label class="checkbox-label"><input name="ai.contextEventKinds.manual_line" type="checkbox" />手动台词</label>
+              <label class="checkbox-label"><input name="ai.contextEventKinds.ai_reply" type="checkbox" />雪风回复</label>
+            </div>
+            <div class="actions">
+              <button type="submit" class="secondary">保存上下文设置</button>
+              <button type="button" class="secondary" id="refreshAiContextButton">
+                刷新 chat
+              </button>
+            </div>
+          </form>
+        </section>
+      </section>
+
+      <form class="card settings ai-scene-panel" id="aiSceneSettingsForm">
+        <div class="section-heading">
+          <div>
+            <h2>直播情景自主性</h2>
+            <p>冷场时由雪风决定是否向全场开口。屏幕理解默认关闭，当前不会上传桌面。</p>
+          </div>
+          <strong id="aiSceneStatus">正在读取情景状态</strong>
+        </div>
+        <label class="checkbox-label">
+          <input name="ai.scene.enabled" type="checkbox" />
+          启用冷场主动发言
+        </label>
+        <div class="two">
+          <label>
+            最短静默秒数
+            <input name="ai.scene.idleMinSeconds" type="number" min="1" />
+          </label>
+          <label>
+            冷场检查最短间隔秒数
+            <input name="ai.scene.idleCooldownMinSeconds" type="number" min="1" />
+          </label>
+          <label>
+            冷场检查最长间隔秒数
+            <input name="ai.scene.idleCooldownMaxSeconds" type="number" min="1" />
+          </label>
+          <label class="checkbox-label scene-checkbox">
+            <input name="ai.scene.vision.enabled" type="checkbox" />
+            启用屏幕理解准备开关
+          </label>
+          <label>
+            目标显示器标识
+            <input
+              name="ai.scene.vision.displayId"
+              placeholder="例如 DISPLAY1，图像验证后生效"
+              autocomplete="off"
+            />
+          </label>
+          <label>
+            滚动时间窗口秒数
+            <input name="ai.scene.vision.rollingWindowSeconds" type="number" min="1" />
+          </label>
+          <label>
+            窗口内最多读取次数
+            <input name="ai.scene.vision.maxCapturesPerWindow" type="number" min="1" />
+          </label>
+        </div>
+        <dl class="scene-status-grid" aria-live="polite">
+          <div><dt>当前静默</dt><dd id="aiSceneSilence">-</dd></div>
+          <div><dt>下次检查</dt><dd id="aiSceneNextCheck">-</dd></div>
+          <div><dt>读取配额</dt><dd id="aiSceneQuota">-</dd></div>
+          <div><dt>图像输入</dt><dd id="aiSceneVisionState">-</dd></div>
+          <div><dt>最近摘要</dt><dd id="aiSceneSummary">-</dd></div>
+          <div><dt>摘要时间</dt><dd id="aiSceneSummaryTime">-</dd></div>
+        </dl>
+        <p class="scene-error" id="aiSceneError"></p>
+        <div class="actions">
+          <button type="submit" class="secondary">保存直播情景设置</button>
+        </div>
+      </form>
+
+      <form class="card" id="audioOutputForm">
+        <div class="section-heading">
+          <div>
+            <h2>音频输出</h2>
+            <p>
+              可只输出到一个设备，也可同时输出到虚拟声卡和监听耳机。虚拟麦克风通常选择
+              CABLE Input，直播软件的麦克风选择 CABLE Output。
+            </p>
+          </div>
+          <strong id="audioOutputStatus">正在读取设备</strong>
+        </div>
+        <div class="audio-output-grid">
+          <label>
+            输出模式
+            <select id="audioOutputMode" name="audioOutput.mode">
+              <option value="system">系统默认媒体输出</option>
+              <option value="single">单设备输出</option>
+              <option value="dual">双设备同时输出</option>
+            </select>
+          </label>
+          <label>
+            媒体音量
+            <div class="volume-control">
+              <input
+                id="audioOutputVolume"
+                name="audioOutput.volume"
+                data-output="audioOutputVolumeOutput"
+                data-format="percent"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+              />
+              <output id="audioOutputVolumeOutput">100%</output>
+            </div>
+          </label>
+          <label id="primaryOutputLabel">
+            主输出设备
+            <select id="primaryOutputSelect"></select>
+          </label>
+          <label id="monitorOutputLabel">
+            监听输出设备
+            <select id="monitorOutputSelect"></select>
+          </label>
+        </div>
+        <div class="actions">
+          <button type="submit">保存音频输出</button>
+          <button type="button" class="secondary" id="testAudioOutputButton">
+            测试当前输出
+          </button>
+          <button type="button" class="secondary" id="refreshAudioDevicesButton">
+            刷新设备
+          </button>
+          <button type="button" class="secondary" id="authorizeAudioDevicesButton">
+            授权读取设备名称
+          </button>
+        </div>
+      </form>
+
+      <section class="card audio-playback-panel">
+        <div class="section-heading">
+          <div>
+            <h2>雪风音频播放</h2>
+            <p>控制台保持打开时，雪风和人工台词的语音会按顺序播放到所选输出设备。</p>
+          </div>
+          <button type="button" id="audioPlaybackUnlockButton">启用播放并测试输出</button>
+        </div>
+        <dl class="audio-playback-status">
+          <dt>状态</dt><dd id="audioPlaybackStatus">等待启用</dd>
+          <dt>输出</dt><dd id="audioPlaybackOutput">正在读取配置</dd>
+          <dt>最近语音</dt><dd id="audioPlaybackLine">暂无</dd>
+        </dl>
+      </section>
+
+      <form class="card" id="musicCollaborationForm">
+        <div class="section-heading">
+          <div>
+            <h2>点歌协作与共享音频</h2>
+            <p>
+              BiliNCM 独立处理点歌和登录；这里仅查看它的本机状态，并通过 VoiceMeeter
+              Input 的 A1/B1 决定歌曲与雪风语音去向。
+            </p>
+          </div>
+          <strong id="musicStatus">点歌协作尚未启用</strong>
+        </div>
+
+        <label class="checkbox-label">
+          <input name="music.enabled" type="checkbox" />
+          启用 BiliNCM 点歌协作
+        </label>
+        <div class="music-settings-grid">
+          <label>
+            BiliNCM 启动文件
+            <input
+              name="music.biliNcm.executablePath"
+              placeholder="D:\\2-2-Other\\BiliNCM\\BiliNCM.exe"
+            />
+          </label>
+          <label>
+            BiliNCM 本机地址
+            <input name="music.biliNcm.baseUrl" placeholder="http://127.0.0.1:5555" />
+          </label>
+          <label>
+            状态刷新秒数
+            <input name="music.biliNcm.pollIntervalSeconds" type="number" min="1" max="30" />
+          </label>
+          <label class="checkbox-label music-checkbox">
+            <input name="music.voiceMeeter.enabled" type="checkbox" />
+            启用 VoiceMeeter 共享音频路由
+          </label>
+          <label>
+            VoiceMeeter Remote DLL（可留空自动查找）
+            <input
+              name="music.voiceMeeter.remoteDllPath"
+              placeholder="D:\\2-2-Other\\VoiceMeeter\\VoicemeeterRemote64.dll"
+            />
+          </label>
+          <label>
+            VoiceMeeter Input 条
+            <input name="music.voiceMeeter.inputStrip" placeholder="Strip[0]" />
+          </label>
+        </div>
+
+        <fieldset class="mode-segmented" id="musicOutputModeControls" aria-label="点歌与雪风音频输出模式">
+          <legend>共享音频输出模式</legend>
+          <input
+            id="musicOutputModeStreamOnly"
+            name="music.outputMode"
+            type="radio"
+            value="stream_only"
+          />
+          <label for="musicOutputModeStreamOnly">仅直播姬</label>
+          <input
+            id="musicOutputModeStreamAndMedia"
+            name="music.outputMode"
+            type="radio"
+            value="stream_and_media"
+          />
+          <label for="musicOutputModeStreamAndMedia">直播姬和媒体</label>
+          <input
+            id="musicOutputModeMediaOnly"
+            name="music.outputMode"
+            type="radio"
+            value="media_only"
+          />
+          <label for="musicOutputModeMediaOnly">仅媒体</label>
+        </fieldset>
+        <p class="music-output-status" id="musicOutputStatus">尚未读取 VoiceMeeter 路由</p>
+
+        <div class="actions">
+          <button type="submit">保存点歌协作设置</button>
+          <button type="button" class="secondary" id="musicStartButton">启动 BiliNCM</button>
+          <button type="button" class="secondary" id="musicRefreshButton">刷新状态</button>
+          <button type="button" class="secondary" id="musicAcceptingButton">切换接收点歌</button>
+          <button type="button" class="secondary" id="musicPlaybackButton">切换播放</button>
+          <button type="button" class="secondary" id="musicSkipButton">跳过当前歌曲</button>
+        </div>
+
+        <div class="music-status-grid">
+          <section>
+            <h3>当前歌曲</h3>
+            <p id="musicCurrentSong">当前没有播放歌曲</p>
+          </section>
+          <section>
+            <h3>待播队列</h3>
+            <ol id="musicQueueList" class="music-queue-list"></ol>
+          </section>
+          <section>
+            <h3>拒绝记录</h3>
+            <ul id="musicRejectList" class="music-reject-list"></ul>
+          </section>
+        </div>
+      </form>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>人工台词 TTS 模型</h2>
+            <p>人工台词使用这套模型。模型从资源库选择，导入时原文件不会被移动。</p>
+          </div>
+          <div class="tts-status-row">
+            <strong id="ttsApiStatus">正在检查 TTS</strong>
+            <span id="ttsPid"></span>
+          </div>
+        </div>
+
+        <div class="model-grid">
+          <div>
+            <label>
+              GPT 模型
+              <select id="gptModelSelect"></select>
+            </label>
+            <div class="file-detail" id="gptModelDetail"></div>
+            <button type="button" class="secondary" id="importGptButton">
+              从文件夹导入 GPT 模型
+            </button>
+            <input
+              id="gptFileInput"
+              type="file"
+              accept=".ckpt"
+              class="hidden"
+            />
+          </div>
+          <div>
+            <label>
+              SoVITS 模型
+              <select id="sovitsModelSelect"></select>
+            </label>
+            <div class="file-detail" id="sovitsModelDetail"></div>
+            <button type="button" class="secondary" id="importSovitsButton">
+              从文件夹导入 SoVITS 模型
+            </button>
+            <input
+              id="sovitsFileInput"
+              type="file"
+              accept=".pth"
+              class="hidden"
+            />
+          </div>
+        </div>
+
+        <div class="actions model-actions">
+          <button type="button" id="applyModelsButton" disabled>
+            应用模型并重启 TTS
+          </button>
+          <button type="button" id="startTtsButton" class="secondary">
+            启动 TTS
+          </button>
+          <button type="button" id="restartTtsButton" class="secondary">
+            重启 TTS
+          </button>
+          <button type="button" id="stopTtsButton" class="secondary">
+            停止 TTS
+          </button>
+          <span class="change-note" id="modelChangeNote"></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>雪风 AI TTS 模型</h2>
+        <p>雪风回复使用独立模型；下一次 AI 合成时会自动切换，人工台词不会改用这套模型。</p>
+        <div class="model-grid">
+          <label>GPT 模型 <select id="aiGptModelSelect"></select></label>
+          <label>SoVITS 模型 <select id="aiSovitsModelSelect"></select></label>
+        </div>
+        <div class="actions">
+          <button type="button" id="saveAiTtsProfileButton">保存雪风 TTS 模型</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>参考音频编辑器</h2>
+            <p>选区必须为 3～10 秒。裁剪只生成新文件，不修改原音频。</p>
+          </div>
+          <button type="button" class="secondary" id="importReferenceButton">
+            从文件夹导入音频
+          </button>
+          <input
+            id="referenceFileInput"
+            type="file"
+            accept=".wav,.mp3,.flac,.ogg,.m4a"
+            class="hidden"
+          />
+        </div>
+
+        <label>
+          资源库音频
+          <select id="referenceSelect"></select>
+        </label>
+        <div class="file-detail" id="referenceDetail"></div>
+
+        <div class="wave-shell">
+          <div id="waveform"></div>
+          <div class="wave-loading" id="waveLoading">选择音频后显示波形</div>
+        </div>
+
+        <div class="wave-controls">
+          <button type="button" class="secondary" id="playOriginalButton">
+            播放/暂停原音
+          </button>
+          <button type="button" class="secondary" id="playSelectionButton">
+            试听选区
+          </button>
+          <button type="button" class="secondary" id="resetRegionButton">
+            重置选区
+          </button>
+          <label class="inline-control">
+            波形缩放
+            <input id="waveZoom" type="range" min="10" max="300" value="80" />
+          </label>
+        </div>
+
+        <div class="trim-grid">
+          <label>
+            开始秒数
+            <input id="trimStart" type="number" min="0" step="0.01" />
+          </label>
+          <label>
+            结束秒数
+            <input id="trimEnd" type="number" min="0" step="0.01" />
+          </label>
+          <div class="duration-box">
+            <span>选区时长</span>
+            <strong id="trimDuration">0.00 秒</strong>
+          </div>
+          <div class="duration-box">
+            <span>状态</span>
+            <strong id="trimValidation">等待音频</strong>
+          </div>
+        </div>
+
+        <div class="reference-meta">
+          <label>
+            参考音频语种
+            <select id="referenceLanguage">
+              <option value="zh">中文</option>
+              <option value="en">英文</option>
+              <option value="ja">日文</option>
+              <option value="yue">粤语</option>
+              <option value="ko">韩文</option>
+              <option value="zh_en">中英混合</option>
+              <option value="ja_en">日英混合</option>
+              <option value="yue_en">粤英混合</option>
+              <option value="ko_en">韩英混合</option>
+              <option value="auto">多语种混合</option>
+              <option value="auto_yue">多语种混合(粤语)</option>
+            </select>
+          </label>
+          <label class="wide">
+            参考音频文本
+            <textarea id="referencePrompt" rows="3"></textarea>
+          </label>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="useReferenceButton">
+            使用当前音频和参考信息
+          </button>
+          <button type="button" id="trimReferenceButton">
+            裁剪选区并设为参考音频
+          </button>
+        </div>
+
+        <div class="aux-reference-panel">
+          <div>
+            <h3>辅助参考音频（可选）</h3>
+            <p>
+              与 GPT-SoVITS 原生界面黄色框一致，通过官方
+              <code>aux_ref_audio_paths</code> 平均融合音色。主参考音频不会重复加入。
+            </p>
+          </div>
+          <select id="auxReferenceSelect" multiple size="6"></select>
+          <div class="actions">
+            <button type="button" id="saveAuxReferencesButton">
+              保存辅助参考音频
+            </button>
+            <button type="button" class="secondary" id="clearAuxReferencesButton">
+              清空辅助选择
+            </button>
+            <span id="auxReferenceStatus">未选择辅助参考音频</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <form class="card settings" id="configForm">
+          <h2>显示与发送设置</h2>
+          <label>直播间 ID <input name="roomId" /></label>
+          <h3>来源名称与真实弹幕</h3>
+          <div class="two">
+            <label>人工名称 <input name="speakerLabels.manual" /></label>
+            <label>雪风名称 <input name="speakerLabels.ai" /></label>
+          </div>
+          <label class="checkbox-label">
+            <input name="biliDanmaku.manualEnabled" type="checkbox" />
+            人工台词发送到真实 B 站直播间
+          </label>
+          <label class="checkbox-label">
+            <input name="biliDanmaku.aiEnabled" type="checkbox" />
+            雪风 AI 回复发送到真实 B 站直播间
+          </label>
+          <label
+            >真实弹幕最多字符
+            <input name="danmakuMaxLength" type="number" min="1"
+          /></label>
+          <label
+            >白框留存秒数，0 表示直到下一条
+            <input
+              name="captionDurationSeconds"
+              type="number"
+              min="0"
+              step="0.1"
+          /></label>
+          <label
+            >白框淡出秒数
+            <input name="captionFadeSeconds" type="number" min="0" step="0.1"
+          /></label>
+          <label>
+            显示模式
+            <select name="captionAnimation">
+              <option value="typewriter">逐字打字机</option>
+              <option value="instant">直接显示</option>
+            </select>
+          </label>
+          <label
+            >逐字速度 ms/字
+            <input
+              name="typewriterMillisecondsPerCharacter"
+              type="number"
+              min="1"
+          /></label>
+
+          <h3>白框文字</h3>
+          <div class="four">
+            <label>X <input name="captionTextBox.x" type="number" /></label>
+            <label>Y <input name="captionTextBox.y" type="number" /></label>
+            <label
+              >宽 <input name="captionTextBox.width" type="number"
+            /></label>
+            <label
+              >高 <input name="captionTextBox.height" type="number"
+            /></label>
+          </div>
+          <label>
+            字体
+            <input
+              id="fontFamilyInput"
+              name="captionTextBox.fontFamily"
+              list="fontFamilyList"
+              autocomplete="off"
+              placeholder="输入字体名称进行搜索"
+            />
+            <datalist id="fontFamilyList"></datalist>
+          </label>
+          <button type="button" class="secondary" id="refreshFontsButton">
+            刷新本机字体
+          </button>
+          <div class="four">
+            <label
+              >字号 <input name="captionTextBox.fontSize" type="number"
+            /></label>
+            <label
+              >行高
+              <input
+                name="captionTextBox.lineHeight"
+                type="number"
+                step="0.05"
+            /></label>
+            <label
+              >最小字号
+              <input
+                name="captionTextBox.minimumFontSize"
+                type="number"
+                min="8"
+            /></label>
+            <label>颜色 <input name="captionTextBox.color" /></label>
+            <label>
+              对齐
+              <select name="captionTextBox.textAlign">
+                <option value="left">左对齐</option>
+                <option value="center">居中</option>
+                <option value="right">右对齐</option>
+              </select>
+            </label>
+          </div>
+
+          <h3>白框来源标签遮罩</h3>
+          <p>名称不为空时，用白色遮罩覆盖原图的 Comments；默认位置在虚线之上。</p>
+          <div class="four">
+            <label>标签 X 偏移 <input name="captionSpeakerLabelBox.offsetX" type="number" /></label>
+            <label>标签 Y 偏移 <input name="captionSpeakerLabelBox.offsetY" type="number" /></label>
+            <label>遮罩宽度 <input name="captionSpeakerLabelBox.minWidth" type="number" min="1" /></label>
+            <label>标签字号 <input name="captionSpeakerLabelBox.fontSize" type="number" min="8" /></label>
+          </div>
+
+          <h3>雪风最近发言框</h3>
+          <div class="four">
+            <label>X <input name="dialogueLog.x" type="number" /></label>
+            <label>Y <input name="dialogueLog.y" type="number" /></label>
+            <label>宽 <input name="dialogueLog.width" type="number" /></label>
+            <label>高 <input name="dialogueLog.height" type="number" min="1" /></label>
+            <label>字号 <input name="dialogueLog.fontSize" type="number" min="8" /></label>
+            <label>最多行数 <input name="dialogueLog.maxLines" type="number" min="1" /></label>
+            <label>单条最小高度 <input name="dialogueLog.itemMinHeight" type="number" min="1" /></label>
+            <label>条目间距 <input name="dialogueLog.gap" type="number" min="0" /></label>
+          </div>
+          <button type="submit">保存显示设置</button>
+        </form>
+
+        <form class="card settings" id="ttsForm">
+          <h2>TTS 推理设置</h2>
+          <label>
+            目标语种
+            <select name="tts.textLang">
+              <option value="zh">中文</option>
+              <option value="en">英文</option>
+              <option value="ja">日文</option>
+              <option value="yue">粤语</option>
+              <option value="ko">韩文</option>
+              <option value="zh_en">中英混合</option>
+              <option value="ja_en">日英混合</option>
+              <option value="yue_en">粤英混合</option>
+              <option value="ko_en">韩英混合</option>
+              <option value="auto">多语种混合</option>
+              <option value="auto_yue">多语种混合(粤语)</option>
+            </select>
+          </label>
+          <label>
+            切句方式
+            <select name="tts.textSplitMethod">
+              <option value="cut0">不切</option>
+              <option value="cut1">凑四句一切</option>
+              <option value="cut2">凑 50 字一切</option>
+              <option value="cut3">按中文句号切</option>
+              <option value="cut4">按英文句号切</option>
+              <option value="cut5">按标点符号切</option>
+            </select>
+          </label>
+
+          <div class="slider-setting">
+            <div><span>语速</span><output id="speedOutput">1</output></div>
+            <input
+              name="tts.speedFactor"
+              data-output="speedOutput"
+              type="range"
+              min="0.6"
+              max="1.65"
+              step="0.05"
+            />
+          </div>
+          <div class="slider-setting">
+            <div><span>句间停顿秒数</span><output id="pauseOutput">0.3</output></div>
+            <input
+              name="tts.fragmentInterval"
+              data-output="pauseOutput"
+              type="range"
+              min="0.1"
+              max="0.5"
+              step="0.01"
+            />
+          </div>
+
+          <details>
+            <summary>高级采样参数</summary>
+            <div class="slider-setting">
+              <div><span>top_k</span><output id="topKOutput">15</output></div>
+              <input
+                name="tts.topK"
+                data-output="topKOutput"
+                type="range"
+                min="1"
+                max="100"
+                step="1"
+              />
+            </div>
+            <div class="slider-setting">
+              <div><span>top_p</span><output id="topPOutput">1</output></div>
+              <input
+                name="tts.topP"
+                data-output="topPOutput"
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+              />
+            </div>
+            <div class="slider-setting">
+              <div>
+                <span>temperature</span>
+                <output id="temperatureOutput">1</output>
+              </div>
+              <input
+                name="tts.temperature"
+                data-output="temperatureOutput"
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+              />
+            </div>
+          </details>
+
+          <label class="checkbox-label">
+            <input name="tts.autoStartApi" type="checkbox" />
+            启动台词工具时自动启动 TTS
+          </label>
+          <button type="submit">保存推理设置</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>直播姬浏览器源</h2>
+        <p>
+          浏览器源宽高设为 1920 × 1080。没有台词时显示透明空页属于正常状态。
+        </p>
+        <label>
+          白框字幕源
+          <input id="captionUrl" readonly />
+        </label>
+        <label>
+          雪风发言框源
+          <input id="dialogueUrl" readonly />
+        </label>
+        <label>
+          点歌器日志源
+          <input id="logOverlayUrl" readonly />
+        </label>
+        <label>
+          兼容：无声音字幕源
+          <input id="captionVisualOnlyUrl" readonly />
+        </label>
+        <label>
+          备用音频诊断页
+          <input id="audioPlayerUrl" readonly />
+        </label>
+      </section>
+
+      <section class="card log">
+        <h2>运行日志</h2>
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <dialog id="ttsDialog">
+      <form method="dialog">
+        <h2>TTS 失败</h2>
+        <p id="ttsError"></p>
+        <menu>
+          <button value="retry">重试</button>
+          <button value="skip">跳过 TTS 继续</button>
+          <button value="cancel">取消本条</button>
+        </menu>
+      </form>
+    </dialog>
+    <script type="module" src="/public/control.js"></script>
+  </body>
+</html>

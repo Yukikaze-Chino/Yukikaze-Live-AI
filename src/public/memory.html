@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>雪风记忆管理</title>
+    <link rel="stylesheet" href="/public/control.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card hero">
+        <div>
+          <h1>雪风记忆管理</h1>
+          <p>查看短期情景、长期记忆、待确认记忆和自动总结记录。</p>
+        </div>
+        <div class="actions">
+          <a class="button-link secondary" href="/control">控制台</a>
+          <button id="refreshMemoryButton" type="button">刷新</button>
+        </div>
+      </section>
+
+      <section class="grid">
+        <section class="card">
+          <h2>短期摘要</h2>
+          <textarea id="memorySummary" rows="8" placeholder="当前直播聊到哪、气氛如何、雪风刚刚回应了什么"></textarea>
+          <div class="actions">
+            <button id="saveMemorySummaryButton" type="button">保存摘要</button>
+            <button id="generateMemorySummaryButton" type="button" class="secondary">自动总结</button>
+            <button id="clearShortTermMemoryButton" type="button" class="secondary">清空短期事件</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>新增长期记忆</h2>
+          <div class="two">
+            <label>
+              类型
+              <select id="newMemoryType">
+                <option value="viewer_memory">观众</option>
+                <option value="stream_memory">直播</option>
+                <option value="style_memory">风格</option>
+                <option value="topic_memory">话题</option>
+                <option value="fact_memory">事实</option>
+              </select>
+            </label>
+            <label>
+              状态
+              <select id="newMemoryStatus">
+                <option value="active">启用</option>
+                <option value="needs_review">待确认</option>
+                <option value="archived">归档</option>
+              </select>
+            </label>
+          </div>
+          <textarea id="newMemoryContent" rows="5" placeholder="写入雪风以后可参考的稳定记忆"></textarea>
+          <div class="actions">
+            <button id="addLongTermMemoryButton" type="button">保存记忆</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="grid">
+        <section class="card">
+          <div class="section-heading">
+            <h2>长期记忆</h2>
+            <select id="memoryTypeFilter">
+              <option value="">全部类型</option>
+              <option value="viewer_memory">观众</option>
+              <option value="stream_memory">直播</option>
+              <option value="style_memory">风格</option>
+              <option value="topic_memory">话题</option>
+              <option value="fact_memory">事实</option>
+            </select>
+          </div>
+          <div id="longTermMemoryList" class="memory-list"></div>
+          <div class="actions">
+            <button id="clearLongTermMemoryButton" type="button" class="secondary">清空长期记忆</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>内部候选</h2>
+          <p>雪风会自动处理候选记忆；这里默认不需要逐条确认。</p>
+          <div id="pendingMemoryList" class="memory-list"></div>
+        </section>
+      </section>
+
+      <section class="grid">
+        <section class="card">
+          <h2>最近短期事件</h2>
+          <div id="recentEventList" class="memory-list"></div>
+        </section>
+
+        <section class="card">
+          <h2>总结记录</h2>
+          <div id="memoryRevisionList" class="memory-list"></div>
+        </section>
+      </section>
+    </main>
+    <script src="/public/memory.js"></script>
+  </body>
+</html>

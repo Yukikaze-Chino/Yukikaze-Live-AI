@@ -1,0 +1,38 @@
+# Dependencies and local build output
+node_modules/
+coverage/
+*.log
+tmp-service-logs/
+
+# Local application state
+config.json
+config.local.json
+secrets.json
+ai-memory.sqlite
+*.sqlite
+*.sqlite-*
+audio/
+runtime/
+edge-profile/
+
+# AI and TTS assets stay on the operator's machine
+resources/
+models/
+*.ckpt
+*.pth
+*.safetensors
+*.wav
+*.mp3
+*.flac
+*.ogg
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Editor and test artifacts
+.playwright-cli/
+.superpowers/
+playwright-report/
+test-results/

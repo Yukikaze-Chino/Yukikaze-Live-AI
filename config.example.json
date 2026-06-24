@@ -1,0 +1,20 @@
+{
+  "serverPort": 17374,
+  "roomId": "your_bilibili_room_id",
+  "browser": {
+    "roomUrl": "https://live.bilibili.com/your_bilibili_room_id"
+  },
+  "tts": {
+    "gptSoVitsRoot": "D:\\2-2-Other\\GPT-SoVITS",
+    "resourceRoot": "D:\\2-2-Other\\Yukikaze-Live-AI\\resources",
+    "refAudioPath": "D:\\path\\to\\your-reference-audio.wav",
+    "gptWeightsPath": "D:\\path\\to\\your-gpt-model.ckpt",
+    "sovitsWeightsPath": "D:\\path\\to\\your-sovits-model.pth"
+  },
+  "ai": {
+    "enabled": false,
+    "provider": "openai-compatible",
+    "baseUrl": "https://api.deepseek.com",
+    "model": "your_model_name"
+  }
+}

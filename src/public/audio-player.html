@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>雪风音频播放器</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+        background: #111827;
+        color: #e5e7eb;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+      }
+
+      main {
+        width: min(760px, calc(100vw - 48px));
+        background: #1f2937;
+        border: 1px solid #374151;
+        border-radius: 12px;
+        padding: 28px;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 28px;
+      }
+
+      p {
+        color: #b7c3d7;
+        line-height: 1.7;
+      }
+
+      button {
+        border: 0;
+        border-radius: 10px;
+        background: #ff5aa5;
+        color: white;
+        font: inherit;
+        font-weight: 700;
+        padding: 12px 18px;
+        cursor: pointer;
+      }
+
+      dl {
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 10px 14px;
+        margin: 22px 0 0;
+      }
+
+      dt {
+        color: #9fb0ca;
+      }
+
+      dd {
+        margin: 0;
+      }
+
+      code {
+        display: block;
+        overflow-wrap: anywhere;
+        background: #111827;
+        border: 1px solid #374151;
+        border-radius: 8px;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body class="caption-audio-player">
+    <main>
+      <h1>雪风音频播放器</h1>
+      <p>
+        这个页面只播放雪风语音。直播姬浏览器源建议使用无声音字幕地址，
+        然后在直播姬里把 CABLE Output 当作音频输入采集。
+      </p>
+      <button id="unlockAudioButton">启用播放并测试输出</button>
+      <dl>
+        <dt>状态</dt>
+        <dd id="audioPlayerStatus">等待启用</dd>
+        <dt>输出</dt>
+        <dd id="audioPlayerOutput">正在读取配置</dd>
+        <dt>最近语音</dt>
+        <dd><code id="audioPlayerLine">暂无</code></dd>
+      </dl>
+    </main>
+    <script type="module" src="/public/audio-player.js"></script>
+  </body>
+</html>
