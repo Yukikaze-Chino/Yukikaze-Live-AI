@@ -45,12 +45,14 @@ AI 台词 → TTS 队列 → 音频输出
 1. 安装 **Node.js 20+**，并确认 `node -v` 能运行。
 
 2. 在项目目录执行：
+
    ```powershell
    npm ci
    npm test
    ```
 
 3. 双击 `start_dialogue_bridge.bat`，或运行：
+
    ```powershell
    npm run dialogue-bridge
    ```
